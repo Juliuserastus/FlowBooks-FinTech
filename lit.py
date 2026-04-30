@@ -18,7 +18,7 @@ if uploaded_file is not None:
             df = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith('.xlsx'):
             # Use the Excel reader if it's an .xlsx file
-            df = pd.read_excel(uploaded_file)
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
 
         # --- THE TABS ARCHITECTURE ---
         # This creates the two clickable tabs at the top of the page
@@ -182,7 +182,7 @@ if uploaded_file is not None:
 
     except Exception as e:
         # If the user uploads a broken file, this prevents the server from crashing
-        st.error(f"Whoops! Something went wrong reading the file. Ensure it is a valid CSV. Error: {e}")
+        st.error(f"Whoops! Something went wrong reading the file. Ensure it is a valid CSV/Excel file. Error: {e}")
 
 else:
     # This shows when the page first loads, before a file is dropped in
