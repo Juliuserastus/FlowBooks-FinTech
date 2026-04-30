@@ -186,4 +186,4 @@ if uploaded_file is not None:
 
 else:
     # This shows when the page first loads, before a file is dropped in
-    st.info("Awaiting file upload... Please drag and drop a client CSV above to begin.")
+    st.info("Awaiting file upload... Please drag and drop your file to begin.")
