@@ -5,10 +5,10 @@ import pandas as pd
 st.set_page_config(page_title="QuickBooks Auditor UI", page_icon="📊", layout="wide")
 
 st.title("Finance Dashboard and Auditor")
-st.write("Upload a CSV file to instantly audit and visualize the data.")
+st.write("Upload a CSV/Excel file to instantly audit and visualize the data.")
 
 # --- THE UPLOADER ---
-uploaded_file = st.file_uploader("Drag and drop your CSV file here", type=["csv"])
+uploaded_file = st.file_uploader("Drag and drop your CSV/Excel file here", type=["csv", "xlsx"])
 
 # --- CORE LOGIC ---
 if uploaded_file is not None:
