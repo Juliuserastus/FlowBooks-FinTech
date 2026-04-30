@@ -4,8 +4,8 @@ import pandas as pd
 # --- PAGE SETUP ---
 st.set_page_config(page_title="QuickBooks Auditor UI", page_icon="📊", layout="wide")
 
-st.title("📊 QuickBooks Client Dashboard & Auditor")
-st.write("Upload a raw client bank statement to instantly audit and visualize the data.")
+st.title("Finance Dashboard and Auditor")
+st.write("Upload a CSV to instantly audit and visualize the data.")
 
 # --- THE UPLOADER ---
 uploaded_file = st.file_uploader("Drag and drop your CSV file here", type=["csv"])
@@ -53,7 +53,7 @@ if uploaded_file is not None:
         # ==========================================
         with tab2:
             st.header("Automated Data Audit")
-            st.write("Automatically flagging anomalies to save consultancy hours.")
+            st.write("Automatically flagging anomalies.")
             
             # --- Audit Tool 1: High-Risk Transactions ---
             st.subheader("🚨 High-Risk Transactions (>$5k)")
