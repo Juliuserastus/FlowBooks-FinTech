@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import requests
 
 # --- PAGE SETUP ---
 st.set_page_config(page_title="QuickBooks Auditor UI", page_icon="📊", layout="wide")
@@ -22,7 +23,7 @@ if uploaded_file is not None:
 
         # --- THE TABS ARCHITECTURE ---
         # This creates the two clickable tabs at the top of the page
-        tab1, tab2 = st.tabs(["📊 Main Dashboard", "🕵️‍♂️ Messy Book Auditor"])
+        tab1, tab2, tab3 = st.tabs(["📊 Main Dashboard", "🕵️‍♂️ Messy Book Auditor", "💱 Live Currency Converter" ])
         
         # ==========================================
         # TAB 1: THE SUMMARY DASHBOARD
@@ -179,6 +180,52 @@ if uploaded_file is not None:
                         )
             else:
                 st.info("Need more categorized data to learn client habits.")
+
+            st.divider()
+
+        #================================================================
+        # Tab 3 Architecture Live currency converter.
+        #================================================================
+        with tab3:
+            st.header("💱 Live Currency Converter")
+            st.write("Pulling real-time exchange rates directly from the global market.")
+            
+            #create two columns for a calculator
+            col1, col2 = st.columns(2)
+            with col1:
+                #the user inputs the amount and the base currency
+                amount = st.number_input("Amount to Convert", min_value=0.0, value=100.00, step=10.0)
+                base_currency = st.selectbox("From Currency", ["USD", "EUR", "KES", "GBP"])
+            with col2:
+                #user selects the currency they want to convert into
+                # we default to index three which is KES in the listbelow
+                target_currency = st.selectbox("To Currency", ["USD", "EUR", "GBP", "KES"], index=3)    
+            #API call only happens when the user clicks the button
+            if st.button("Convert Now"):
+                try:
+                    #the API call, injects the base currency into the url dynamic   
+                    url = f"https://open.er-api.com/v6/latest/{base_currency}" 
+                    response = requests.get(url)
+
+                    #parse the JSON data
+                    data = response.json()
+                    
+                    #extract the rate and do the math
+                    if data["result"] == "success":
+                        rate = data["rates"][target_currency]
+                        converted_amount = amount * rate
+                        st.divider()
+                        st.success(f"Live Market Rates: {base_currency} = {rate} {target_currency}")
+                        st.metric(
+                        label=f"Converted Total ({target_currency})",
+                        value=f"{converted_amount:,.2f}"
+                        )
+                    else:
+                        st.error(f"Could not connect to fetch live data")
+                except Exception as e:
+                    st.error(f"Could not connect to the internet. Error{e}")       
+                    
+    
 
     except Exception as e:
         # If the user uploads a broken file, this prevents the server from crashing
