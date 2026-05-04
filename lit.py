@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 
-# --- PAGE SETUP ---
-st.set_page_config(page_title="QuickBooks Auditor UI", page_icon="📊", layout="wide")
+# --- PAGE SETUP --
+st.set_page_config(page_title="FlowBooks FinTech", page_icon="📊", layout="wide")
 
 st.title("Finance Dashboard and Auditor")
 st.write("Upload a CSV/Excel file to instantly audit and visualize the data.")
@@ -23,7 +23,7 @@ if uploaded_file is not None:
 
         # --- THE TABS ARCHITECTURE ---
         # This creates the two clickable tabs at the top of the page
-        tab1, tab2, tab3, tab4 = st.tabs(["📊 Main Dashboard", "🕵️‍♂️ Messy Book Auditor", "💱 Live Currency Converter", "📱 M-Pesa Engine" ])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Main Dashboard", "🕵️‍♂️ Messy Book Auditor", "💱 Live Currency Converter", "📱 M-Pesa Engine", "🤝 Bank Reconciler" ])
         
         # ==========================================
         # TAB 1: THE SUMMARY DASHBOARD
@@ -305,7 +305,74 @@ if uploaded_file is not None:
                 )
             else:
                 st.warning("⚠️ Please upload a valid M-Pesa statement containing a 'Details' column to use this tool.")
+        # ==========================================
+        # TAB 5: THE BANK RECONCILER
+        # ==========================================
+        with tab5:
+            st.header("🤝 Automated Bank & M-Pesa Reconciliation")
+            st.write("Upload your processed M-Pesa Cashbook and your raw Bank Statement to instantly find missing funds.")
+            
+            # We need two uploaders side-by-side for this tool
+            col_m, col_b = st.columns(2)
+            with col_m:
+                mpesa_upload = st.file_uploader("1. Upload Processed M-Pesa File", type=["csv", "xlsx"], key="mpesa")
+            with col_b:
+                bank_upload = st.file_uploader("2. Upload Raw Bank Statement", type=["csv", "xlsx"], key="bank")
+                
+            # Only run the engine if BOTH files are uploaded
+            if mpesa_upload and bank_upload:
+                try:
+                    # 1. Load the files into Pandas
+                    if mpesa_upload.name.endswith('.csv'):
+                        df_m = pd.read_csv(mpesa_upload)
+                    else:
+                        df_m = pd.read_excel(mpesa_upload, engine='openpyxl')
+                        
+                    if bank_upload.name.endswith('.csv'):
+                        df_b = pd.read_csv(bank_upload)
+                    else:
+                        df_b = pd.read_excel(bank_upload, engine='openpyxl')
                     
+                    # 2. PREPARE FOR THE MERGE
+                    # To merge, both files need a column with the exact same name to act as the "key".
+                    # M-pesa uses 'Receipt No.', but our bank uses 'Reference'. Let's rename the bank's column!
+                    if 'Reference' in df_b.columns:
+                        df_b = df_b.rename(columns={'Reference': 'Receipt No.'})
+                    
+                    # 3. THE OUTER MERGE (The VLOOKUP on Steroids)
+                    # 'how="outer"' means: Keep every row from both files. If they match, glue them together. 
+                    # If they don't match, fill the empty side with NaN (Not a Number).
+                    merged_df = pd.merge(df_m, df_b, on='Receipt No.', how='outer', suffixes=('_Mpesa', '_Bank'))
+                    
+                    # 4. THE INVESTIGATION (Using .isna())
+                    # If the 'Details' column (from M-Pesa) has data, but the 'Date' column (from Bank) is NaN,
+                    # it means the money left M-Pesa but never arrived at the bank!
+                    
+                    # Condition 1: Perfect Match
+                    perfect_matches = merged_df[~merged_df['Details'].isna() & ~merged_df['Date'].isna()]
+                    
+                    # Condition 2: Missing in Bank (M-Pesa exists, Bank is NaN)
+                    missing_in_bank = merged_df[~merged_df['Details'].isna() & merged_df['Date'].isna()]
+                    
+                    # Condition 3: Direct to Bank (Bank exists, M-Pesa is NaN)
+                    direct_bank = merged_df[merged_df['Details'].isna() & ~merged_df['Date'].isna()]
+                    
+                    # 5. THE DASHBOARD DISPLAY
+                    st.divider()
+                    st.subheader("📊 Reconciliation Results")
+                    
+                    met1, met2, met3 = st.columns(3)
+                    met1.metric("✅ Perfect Matches", len(perfect_matches))
+                    met2.metric("🚨 Missing in Bank", len(missing_in_bank), delta="-Alert", delta_color="inverse")
+                    met3.metric("🏦 Direct Bank Deposits", len(direct_bank))
+                    
+                    st.write("### 🚨 Funds Missing from Bank")
+                    st.write("These transactions are in M-Pesa but cannot be found in the bank statement.")
+                    # Show only the relevant columns for the missing funds
+                    st.dataframe(missing_in_bank[['Completion Time', 'Receipt No.', 'Details', 'Standard_Amount']])
+                    
+                except Exception as e:
+                    st.error(f"Error processing files: Ensure you uploaded the correct formats. Details: {e}")            
     
 
     except Exception as e:
